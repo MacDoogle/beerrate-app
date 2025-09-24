@@ -1,6 +1,14 @@
 {
   "beers": [
     {
+      "id": 1758747599322,
+      "name": "Strawberry Moon",
+      "brewery": "Zero Gravity",
+      "style": "Sour",
+      "rating": 4,
+      "dateAdded": "2025-09-24T20:59:59.322Z"
+    },
+    {
       "id": 1758742787960.1277,
       "name": "Elaborate Metaphor",
       "brewery": "Burlington Brew Company",
@@ -17,6 +25,6 @@
       "dateAdded": "2025-09-22T18:17:58.937Z"
     }
   ],
-  "lastUpdated": "2025-09-24T20:56:45.634Z",
+  "lastUpdated": "2025-09-24T20:59:59.322Z",
   "version": "1.0"
 }
