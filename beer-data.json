@@ -1,14 +1,22 @@
 {
   "beers": [
     {
-      "id": 1758747260733,
-      "name": "Strawberry Moon",
-      "brewery": "Zero Gravity",
-      "style": "Sour",
-      "rating": 4,
-      "dateAdded": "2025-09-24T20:54:20.733Z"
+      "id": 1758742787960.1277,
+      "name": "Elaborate Metaphor",
+      "brewery": "Burlington Brew Company",
+      "style": "Pale Ale",
+      "rating": 3,
+      "dateAdded": "2025-09-24T19:28:47.942Z"
+    },
+    {
+      "id": 1758742787960.2139,
+      "name": "Pine Hill",
+      "brewery": "Rutland Beer Works",
+      "style": "IPA",
+      "rating": 1,
+      "dateAdded": "2025-09-22T18:17:58.937Z"
     }
   ],
-  "lastUpdated": "2025-09-24T20:54:20.733Z",
+  "lastUpdated": "2025-09-24T20:56:45.634Z",
   "version": "1.0"
 }
