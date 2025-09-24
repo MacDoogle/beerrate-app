@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeerRate - Rate Your Favorite Beers</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍺 BeerRate</h1>
+            <p>Rate and track your favorite beers</p>
+        </header>
+
+        <!-- Add Beer Form -->
+        <section class="add-beer-section">
+            <h2>Add a New Beer</h2>
+            <form id="beerForm">
+                <div class="form-group">
+                    <label for="beerName">Beer Name:</label>
+                    <input type="text" id="beerName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="brewery">Brewery:</label>
+                    <input type="text" id="brewery" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="beerStyle">Beer Style:</label>
+                    <select id="beerStyle" required>
+                        <option value="">Select a style...</option>
+                        <option value="IPA">IPA (India Pale Ale)</option>
+                        <option value="Lager">Lager</option>
+                        <option value="Stout">Stout</option>
+                        <option value="Porter">Porter</option>
+                        <option value="Wheat Beer">Wheat Beer</option>
+                        <option value="Pilsner">Pilsner</option>
+                        <option value="Ale">Ale</option>
+                        <option value="Sour">Sour</option>
+                        <option value="Amber">Amber</option>
+                        <option value="Brown Ale">Brown Ale</option>
+                        <option value="Pale Ale">Pale Ale</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Rating:</label>
+                    <div class="rating-buttons">
+                        <button type="button" class="rating-btn" data-rating="1">⭐ 1 - Bad</button>
+                        <button type="button" class="rating-btn" data-rating="2">⭐⭐ 2 - Drinkable</button>
+                        <button type="button" class="rating-btn" data-rating="3">⭐⭐⭐ 3 - Good</button>
+                        <button type="button" class="rating-btn" data-rating="4">⭐⭐⭐⭐ 4 - Great</button>
+                    </div>
+                    <input type="hidden" id="rating" required>
+                </div>
+
+                <button type="submit" class="submit-btn">Add Beer</button>
+            </form>
+        </section>
+
+        <!-- GitHub Setup Section -->
+        <section class="github-section" id="githubSetup" style="display: none;">
+            <h2>🔧 GitHub Integration Setup</h2>
+            <p>To save data across browsers, connect to your GitHub repository:</p>
+            <div class="form-group">
+                <label for="githubToken">GitHub Personal Access Token:</label>
+                <input type="password" id="githubToken" placeholder="Enter your GitHub token">
+                <small>Create one at: GitHub Settings → Developer settings → Personal access tokens</small>
+            </div>
+            <div class="form-group">
+                <label for="githubRepo">Repository (username/repo-name):</label>
+                <input type="text" id="githubRepo" placeholder="e.g., yourusername/beerrate-app">
+            </div>
+            <button id="saveGithubConfig" class="backup-btn">💾 Save Configuration</button>
+            <button id="testGithubConnection" class="backup-btn">🔍 Test Connection</button>
+        </section>
+
+        <!-- Search Section -->
+        <section class="search-section">
+            <h2>Search Your Beers</h2>
+            <input type="text" id="searchInput" placeholder="Search by name, brewery, or style...">
+        </section>
+
+        <!-- Backup Section -->
+        <section class="backup-section">
+            <h2>Backup & Restore</h2>
+            <div class="backup-controls">
+                <button id="exportBtn" class="backup-btn">📥 Export Data</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;">
+                <button id="importBtn" class="backup-btn">📤 Import Data</button>
+                <button id="syncGithubBtn" class="backup-btn">🔄 Sync to GitHub</button>
+                <button id="statsBtn" class="backup-btn">📊 View Stats</button>
+                <button id="githubSetupBtn" class="backup-btn">⚙️ GitHub Setup</button>
+            </div>
+        </section>
+
+        <!-- Connection Status -->
+        <div id="connectionStatus" class="connection-status"></div>
+
+        <!-- Beer List -->
+        <section class="beer-list-section">
+            <h2>Your Beer Ratings</h2>
+            <div id="beerList" class="beer-list">
+                <!-- Beers will be displayed here -->
+            </div>
+        </section>
+    </div>
+
+    <script src="github-script.js"></script>
+</body>
+</html>
