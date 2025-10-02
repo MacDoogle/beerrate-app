@@ -1,0 +1,16 @@
+{
+  "name": "beerrate-app",
+  "version": "1.0.0",
+  "description": "A simple beer rating application",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step needed for static site'",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "keywords": ["beer", "rating", "web-app"],
+  "author": "Your Name",
+  "license": "MIT"
+}
