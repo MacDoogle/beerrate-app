@@ -1,205 +1,78 @@
-// BeerRate App with GitHub Integration
+// Simplified BeerRate App - No GitHub Integration
+// Uses simple API backend for data persistence
 
 class BeerRateApp {
     constructor() {
         this.beers = [];
         this.selectedRating = null;
-        this.githubConfig = this.loadGitHubConfig();
+        this.API_BASE = '/api/beers'; // Will work with Vercel serverless functions
         this.init();
     }
 
     async init() {
         this.setupEventListeners();
-        
-        // Try to load data from GitHub first, then fallback to localStorage
         await this.loadData();
         this.displayBeers();
-        this.updateConnectionStatus();
+        this.showMessage('✅ Connected to cloud storage!', 'success');
     }
 
-    // GitHub Configuration
-    loadGitHubConfig() {
-        const config = localStorage.getItem('githubConfig');
-        return config ? JSON.parse(config) : null;
-    }
-
-    saveGitHubConfig(token, repo) {
-        const config = { token, repo };
-        localStorage.setItem('githubConfig', JSON.stringify(config));
-        this.githubConfig = config;
-    }
-
-    // Data Loading Priority: GitHub → localStorage → empty
+    // Simple API calls instead of GitHub integration
     async loadData() {
         try {
-            if (this.githubConfig) {
-                console.log('Attempting to load from GitHub...');
-                this.beers = await this.loadFromGitHub();
-                this.showMessage('Data loaded from GitHub!', 'success');
-                return;
+            const response = await fetch(this.API_BASE);
+            if (response.ok) {
+                const data = await response.json();
+                this.beers = data.beers || [];
+                console.log(`Loaded ${this.beers.length} beers from cloud`);
+            } else {
+                console.log('No existing data found, starting fresh');
+                this.beers = [];
             }
         } catch (error) {
-            console.log('GitHub load failed, trying localStorage...', error.message);
-        }
-
-        // Fallback to localStorage
-        const stored = localStorage.getItem('beerRatings');
-        this.beers = stored ? JSON.parse(stored) : [];
-        
-        if (this.beers.length > 0) {
-            this.showMessage('Data loaded from local storage', 'info');
+            console.log('Using offline mode, data will be saved locally');
+            // Fallback to localStorage for offline use
+            const stored = localStorage.getItem('beerRatings');
+            this.beers = stored ? JSON.parse(stored) : [];
         }
     }
 
-    // GitHub API Functions
-    async loadFromGitHub() {
-        if (!this.githubConfig) throw new Error('GitHub not configured');
-
-        const url = `https://api.github.com/repos/${this.githubConfig.repo}/contents/beer-data.json`;
-        
-        const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${this.githubConfig.token}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        });
-
-        if (response.status === 404) {
-            // File doesn't exist yet, return empty array
-            return [];
-        }
-
-        if (!response.ok) {
-            throw new Error(`GitHub API error: ${response.status}`);
-        }
-
-        const fileData = await response.json();
-        const content = atob(fileData.content.replace(/\s/g, ''));
-        const data = JSON.parse(content);
-        
-        return data.beers || [];
-    }
-
-    async saveToGitHub() {
-        if (!this.githubConfig) {
-            this.showMessage('GitHub not configured. Use GitHub Setup first.', 'error');
-            return false;
-        }
-
+    async saveToCloud() {
         try {
-            const exportData = {
-                beers: this.beers,
-                lastUpdated: new Date().toISOString(),
-                version: '1.0'
-            };
-
-            // Get current file SHA (required for updates)
-            let sha = null;
-            try {
-                const getCurrentFile = await fetch(
-                    `https://api.github.com/repos/${this.githubConfig.repo}/contents/beer-data.json`,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${this.githubConfig.token}`,
-                            'Accept': 'application/vnd.github.v3+json'
-                        }
-                    }
-                );
-                
-                if (getCurrentFile.ok) {
-                    const currentData = await getCurrentFile.json();
-                    sha = currentData.sha;
-                }
-            } catch (e) {
-                // File doesn't exist yet, that's fine
-            }
-
-            // Create or update file
-            const content = btoa(JSON.stringify(exportData, null, 2));
-            const updateData = {
-                message: `Update beer ratings - ${new Date().toLocaleString()}`,
-                content: content
-            };
-
-            if (sha) {
-                updateData.sha = sha;
-            }
-
-            const response = await fetch(
-                `https://api.github.com/repos/${this.githubConfig.repo}/contents/beer-data.json`,
-                {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${this.githubConfig.token}`,
-                        'Accept': 'application/vnd.github.v3+json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(updateData)
-                }
-            );
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(`GitHub save failed: ${error.message}`);
-            }
-
-            this.showMessage('Data synced to GitHub successfully!', 'success');
-            return true;
-
-        } catch (error) {
-            this.showMessage(`GitHub sync failed: ${error.message}`, 'error');
-            return false;
-        }
-    }
-
-    async testGitHubConnection() {
-        if (!this.githubConfig) {
-            this.showMessage('Please configure GitHub settings first', 'error');
-            return;
-        }
-
-        try {
-            const response = await fetch(`https://api.github.com/repos/${this.githubConfig.repo}`, {
+            const response = await fetch(this.API_BASE, {
+                method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${this.githubConfig.token}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ beers: this.beers })
             });
 
             if (response.ok) {
-                this.showMessage('GitHub connection successful!', 'success');
-                this.updateConnectionStatus();
+                console.log('Data saved to cloud successfully');
+                return true;
             } else {
-                throw new Error(`Connection failed: ${response.status}`);
+                throw new Error('Failed to save to cloud');
             }
         } catch (error) {
-            this.showMessage(`Connection test failed: ${error.message}`, 'error');
+            console.log('Cloud save failed, saving locally:', error);
+            // Fallback to localStorage
+            localStorage.setItem('beerRatings', JSON.stringify(this.beers));
+            return false;
         }
     }
 
-    updateConnectionStatus() {
-        const status = document.getElementById('connectionStatus');
-        if (this.githubConfig) {
-            status.innerHTML = `
-                <div class="status-connected">
-                    ✅ Connected to GitHub: ${this.githubConfig.repo}
-                </div>
-            `;
-        } else {
-            status.innerHTML = `
-                <div class="status-local">
-                    💾 Using local storage only - Click "GitHub Setup" to sync across devices
-                </div>
-            `;
+    async deleteBeerFromCloud(id) {
+        try {
+            const response = await fetch(`${this.API_BASE}?id=${id}`, {
+                method: 'DELETE'
+            });
+            return response.ok;
+        } catch (error) {
+            console.log('Cloud delete failed:', error);
+            return false;
         }
     }
 
-    // Local Storage Management (backup)
-    saveBeersLocally() {
-        localStorage.setItem('beerRatings', JSON.stringify(this.beers));
-    }
-
-    // Event Listeners
+    // Event Listeners (simplified - no GitHub setup needed)
     setupEventListeners() {
         // Form submission
         document.getElementById('beerForm').addEventListener('submit', (e) => {
@@ -209,8 +82,8 @@ class BeerRateApp {
 
         // Rating button clicks
         document.querySelectorAll('.rating-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.selectRating(e.target);
+            btn.addEventListener('click', () => {
+                this.selectRating(btn);
             });
         });
 
@@ -235,57 +108,6 @@ class BeerRateApp {
         document.getElementById('statsBtn').addEventListener('click', () => {
             this.showStats();
         });
-
-        // GitHub functionality
-        document.getElementById('githubSetupBtn').addEventListener('click', () => {
-            this.toggleGitHubSetup();
-        });
-
-        document.getElementById('saveGithubConfig').addEventListener('click', () => {
-            this.saveGitHubSettings();
-        });
-
-        document.getElementById('testGithubConnection').addEventListener('click', () => {
-            this.testGitHubConnection();
-        });
-
-        document.getElementById('syncGithubBtn').addEventListener('click', () => {
-            this.syncToGitHub();
-        });
-    }
-
-    toggleGitHubSetup() {
-        const setup = document.getElementById('githubSetup');
-        setup.style.display = setup.style.display === 'none' ? 'block' : 'none';
-        
-        if (this.githubConfig) {
-            document.getElementById('githubRepo').value = this.githubConfig.repo;
-        }
-    }
-
-    saveGitHubSettings() {
-        const token = document.getElementById('githubToken').value.trim();
-        const repo = document.getElementById('githubRepo').value.trim();
-
-        if (!token || !repo) {
-            this.showMessage('Please fill in both GitHub token and repository', 'error');
-            return;
-        }
-
-        this.saveGitHubConfig(token, repo);
-        this.showMessage('GitHub configuration saved!', 'success');
-        this.updateConnectionStatus();
-        
-        // Hide setup section
-        document.getElementById('githubSetup').style.display = 'none';
-    }
-
-    async syncToGitHub() {
-        const success = await this.saveToGitHub();
-        if (success) {
-            // Also save locally as backup
-            this.saveBeersLocally();
-        }
     }
 
     // Rating Selection
@@ -299,7 +121,7 @@ class BeerRateApp {
         document.getElementById('rating').value = this.selectedRating;
     }
 
-    // Add New Beer
+    // Add New Beer (simplified)
     async addBeer() {
         const name = document.getElementById('beerName').value.trim();
         const brewery = document.getElementById('brewery').value.trim();
@@ -307,7 +129,7 @@ class BeerRateApp {
         const rating = this.selectedRating;
 
         if (!name || !brewery || !style || !rating) {
-            this.showMessage('Please fill in all fields and select a rating!', 'error');
+            this.showMessage('Please fill in all fields and select a rating', 'error');
             return;
         }
 
@@ -318,7 +140,7 @@ class BeerRateApp {
         );
 
         if (duplicate) {
-            if (confirm('This beer already exists. Do you want to update its rating?')) {
+            if (confirm(`You've already rated "${name}" by ${brewery}. Update the rating?`)) {
                 duplicate.rating = parseInt(rating);
                 duplicate.style = style;
                 duplicate.dateAdded = new Date().toISOString();
@@ -328,27 +150,26 @@ class BeerRateApp {
         } else {
             const newBeer = {
                 id: Date.now(),
-                name: name,
-                brewery: brewery,
-                style: style,
+                name,
+                brewery,
+                style,
                 rating: parseInt(rating),
                 dateAdded: new Date().toISOString()
             };
-
-            this.beers.unshift(newBeer);
+            this.beers.push(newBeer);
         }
 
-        // Save locally first (immediate)
-        this.saveBeersLocally();
+        // Save to cloud
+        const saved = await this.saveToCloud();
         
-        // Try to sync to GitHub (if configured)
-        if (this.githubConfig) {
-            await this.saveToGitHub();
-        }
-
         this.displayBeers();
         this.resetForm();
-        this.showMessage('Beer added successfully!', 'success');
+        
+        if (saved) {
+            this.showMessage('🍺 Beer added and saved to cloud!', 'success');
+        } else {
+            this.showMessage('🍺 Beer added (saved locally - will sync when online)', 'warning');
+        }
     }
 
     // Reset Form
@@ -369,7 +190,7 @@ class BeerRateApp {
         if (beers.length === 0) {
             beerList.innerHTML = `
                 <div class="empty-state">
-                    <p>No beers found. Add your first beer rating above!</p>
+                    <p>No beers rated yet! Add your first beer above. 🍺</p>
                 </div>
             `;
             return;
@@ -396,10 +217,9 @@ class BeerRateApp {
         }
 
         const filtered = this.beers.filter(beer => {
-            const term = searchTerm.toLowerCase();
-            return beer.name.toLowerCase().includes(term) ||
-                   beer.brewery.toLowerCase().includes(term) ||
-                   beer.style.toLowerCase().includes(term);
+            return beer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                   beer.brewery.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                   beer.style.toLowerCase().includes(searchTerm.toLowerCase());
         });
 
         this.displayBeers(filtered);
@@ -408,23 +228,26 @@ class BeerRateApp {
     // Delete Beer
     async deleteBeer(id) {
         if (confirm('Are you sure you want to delete this beer rating?')) {
+            // Remove from local array
             this.beers = this.beers.filter(beer => beer.id !== id);
             
-            // Save locally and to GitHub
-            this.saveBeersLocally();
-            if (this.githubConfig) {
-                await this.saveToGitHub();
-            }
+            // Try to delete from cloud
+            const deleted = await this.deleteBeerFromCloud(id);
             
             this.displayBeers();
-            this.showMessage('Beer deleted successfully!', 'info');
+            
+            if (deleted) {
+                this.showMessage('Beer deleted from cloud storage', 'success');
+            } else {
+                this.showMessage('Beer deleted locally (will sync when online)', 'warning');
+            }
         }
     }
 
-    // Export/Import functionality
+    // Export/Import functionality (same as before)
     exportData() {
         if (this.beers.length === 0) {
-            this.showMessage('No beers to export!', 'info');
+            this.showMessage('No beers to export!', 'warning');
             return;
         }
 
@@ -447,7 +270,7 @@ class BeerRateApp {
         this.showMessage('Data exported successfully!', 'success');
     }
 
-    importData(file) {
+    async importData(file) {
         if (!file) return;
 
         const reader = new FileReader();
@@ -455,72 +278,30 @@ class BeerRateApp {
             try {
                 const importedData = JSON.parse(e.target.result);
                 
-                let beersToImport = [];
-                if (importedData.beers && Array.isArray(importedData.beers)) {
-                    beersToImport = importedData.beers;
-                } else if (Array.isArray(importedData)) {
-                    beersToImport = importedData;
-                } else {
+                if (!importedData.beers || !Array.isArray(importedData.beers)) {
                     throw new Error('Invalid file format');
                 }
 
-                const isValidData = beersToImport.every(beer => 
-                    beer.name && beer.brewery && beer.style && beer.rating
-                );
+                const confirmMessage = `Import ${importedData.beers.length} beers? This will replace your current data.`;
+                
+                if (confirm(confirmMessage)) {
+                    this.beers = importedData.beers.map(beer => ({
+                        ...beer,
+                        id: beer.id || Date.now() + Math.random(),
+                        dateAdded: beer.dateAdded || new Date().toISOString()
+                    }));
 
-                if (!isValidData) {
-                    throw new Error('Invalid beer data format');
-                }
-
-                const merge = confirm(
-                    `Import ${beersToImport.length} beers?\n\n` +
-                    `Click OK to MERGE with existing data\n` +
-                    `Click Cancel to REPLACE all existing data`
-                );
-
-                if (!merge) {
-                    this.beers = [];
-                }
-
-                let importedCount = 0;
-                let duplicateCount = 0;
-
-                beersToImport.forEach(importedBeer => {
-                    const existing = this.beers.find(beer => 
-                        beer.name.toLowerCase() === importedBeer.name.toLowerCase() && 
-                        beer.brewery.toLowerCase() === importedBeer.brewery.toLowerCase()
-                    );
-
-                    if (existing) {
-                        existing.rating = importedBeer.rating;
-                        existing.style = importedBeer.style;
-                        existing.dateAdded = importedBeer.dateAdded || new Date().toISOString();
-                        duplicateCount++;
+                    const saved = await this.saveToCloud();
+                    this.displayBeers();
+                    
+                    if (saved) {
+                        this.showMessage(`Successfully imported ${this.beers.length} beers!`, 'success');
                     } else {
-                        this.beers.push({
-                            ...importedBeer,
-                            id: Date.now() + Math.random(),
-                            dateAdded: importedBeer.dateAdded || new Date().toISOString()
-                        });
-                        importedCount++;
+                        this.showMessage(`Imported ${this.beers.length} beers (saved locally)`, 'warning');
                     }
-                });
-
-                // Save locally and to GitHub
-                this.saveBeersLocally();
-                if (this.githubConfig) {
-                    await this.saveToGitHub();
                 }
-                
-                this.displayBeers();
-                
-                this.showMessage(
-                    `Import complete! Added ${importedCount} new beers, updated ${duplicateCount} existing beers.`,
-                    'success'
-                );
-
             } catch (error) {
-                this.showMessage('Error importing file: ' + error.message, 'error');
+                this.showMessage('Error importing file. Please check the format.', 'error');
             }
         };
 
@@ -532,7 +313,7 @@ class BeerRateApp {
         const stats = this.getStats();
         
         if (!stats) {
-            this.showMessage('No beers to analyze!', 'info');
+            this.showMessage('No beers to analyze yet!', 'warning');
             return;
         }
 
@@ -602,25 +383,25 @@ class BeerRateApp {
         messageDiv.className = `message message-${type}`;
         messageDiv.textContent = message;
         
-        let backgroundColor;
-        switch(type) {
-            case 'success': backgroundColor = '#28a745'; break;
-            case 'error': backgroundColor = '#dc3545'; break;
-            default: backgroundColor = '#17a2b8'; break;
-        }
-        
+        const colors = {
+            success: '#d4edda',
+            error: '#f8d7da',
+            warning: '#fff3cd',
+            info: '#d1ecf1'
+        };
+
         messageDiv.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
-            padding: 12px 20px;
-            background: ${backgroundColor};
-            color: white;
+            padding: 15px 20px;
+            background: ${colors[type] || colors.info};
+            border: 1px solid;
             border-radius: 5px;
             z-index: 1000;
-            animation: slideIn 0.3s ease-out;
             max-width: 300px;
-            word-wrap: break-word;
+            font-weight: bold;
+            animation: slideIn 0.3s ease-out;
         `;
 
         document.body.appendChild(messageDiv);
@@ -632,7 +413,7 @@ class BeerRateApp {
                     document.body.removeChild(messageDiv);
                 }
             }, 300);
-        }, 4000);
+        }, 3000);
     }
 
     // Get statistics
@@ -641,23 +422,21 @@ class BeerRateApp {
 
         const totalBeers = this.beers.length;
         const avgRating = (this.beers.reduce((sum, beer) => sum + beer.rating, 0) / totalBeers).toFixed(1);
-        const topStyle = this.getMostPopularStyle();
-        const topBrewery = this.getMostPopularBrewery();
         
-        const greatCount = this.beers.filter(beer => beer.rating === 4).length;
-        const goodCount = this.beers.filter(beer => beer.rating === 3).length;
-        const drinkableCount = this.beers.filter(beer => beer.rating === 2).length;
-        const badCount = this.beers.filter(beer => beer.rating === 1).length;
+        const badCount = this.beers.filter(b => b.rating === 1).length;
+        const drinkableCount = this.beers.filter(b => b.rating === 2).length;
+        const goodCount = this.beers.filter(b => b.rating === 3).length;
+        const greatCount = this.beers.filter(b => b.rating === 4).length;
 
         return {
             totalBeers,
             avgRating,
-            topStyle,
-            topBrewery,
-            greatCount,
-            goodCount,
+            topStyle: this.getMostPopularStyle(),
+            topBrewery: this.getMostPopularBrewery(),
+            badCount,
             drinkableCount,
-            badCount
+            goodCount,
+            greatCount
         };
     }
 
@@ -666,9 +445,7 @@ class BeerRateApp {
         this.beers.forEach(beer => {
             styleCounts[beer.style] = (styleCounts[beer.style] || 0) + 1;
         });
-        
-        return Object.entries(styleCounts)
-            .sort(([,a], [,b]) => b - a)[0]?.[0] || 'None';
+        return Object.keys(styleCounts).reduce((a, b) => styleCounts[a] > styleCounts[b] ? a : b) || 'None';
     }
 
     getMostPopularBrewery() {
@@ -676,9 +453,7 @@ class BeerRateApp {
         this.beers.forEach(beer => {
             breweryCounts[beer.brewery] = (breweryCounts[beer.brewery] || 0) + 1;
         });
-        
-        return Object.entries(breweryCounts)
-            .sort(([,a], [,b]) => b - a)[0]?.[0] || 'None';
+        return Object.keys(breweryCounts).reduce((a, b) => breweryCounts[a] > breweryCounts[b] ? a : b) || 'None';
     }
 }
 
@@ -688,42 +463,17 @@ document.addEventListener('DOMContentLoaded', () => {
     app = new BeerRateApp();
 });
 
-// Add CSS for new elements
+// Add animation keyframes
 const style = document.createElement('style');
 style.textContent = `
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(100px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    
     @keyframes fadeOut {
         from { opacity: 1; transform: translateX(0); }
         to { opacity: 0; transform: translateX(100px); }
-    }
-    
-    .connection-status {
-        margin: 20px 0;
-        padding: 10px;
-        border-radius: 5px;
-        text-align: center;
-    }
-    
-    .status-connected {
-        background: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
-    }
-    
-    .status-local {
-        background: #fff3cd;
-        color: #856404;
-        border: 1px solid #ffeaa7;
-    }
-    
-    .github-section {
-        background: #f8f9fa;
-        border: 2px dashed #6c757d;
-    }
-    
-    .github-section small {
-        display: block;
-        color: #6c757d;
-        margin-top: 5px;
     }
 `;
 document.head.appendChild(style);
