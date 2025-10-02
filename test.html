@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeerRate - CSS Test</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Inline test styles to verify if external CSS is loading */
+        .test-indicator {
+            background: red;
+            color: white;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        
+        /* This will be overridden if external CSS loads */
+        body {
+            background: red !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-indicator">
+        🧪 CSS TEST PAGE
+    </div>
+    
+    <!-- If you see a red background, CSS isn't loading -->
+    <!-- If you see the blue gradient background, CSS is working -->
+    
+    <div class="container">
+        <header>
+            <h1>🍺 BeerRate CSS Test</h1>
+            <p>If this looks styled properly, CSS is working!</p>
+        </header>
+
+        <section class="add-beer-section">
+            <h2>Test Section</h2>
+            <p>This should have a white background with rounded corners and shadow.</p>
+            
+            <div class="form-group">
+                <label for="test">Test Input:</label>
+                <input type="text" id="test" placeholder="Should be styled">
+            </div>
+            
+            <button class="submit-btn">Test Button</button>
+        </section>
+    </div>
+
+    <script>
+        // Simple test to verify JavaScript is working
+        console.log('✅ JavaScript is loading correctly');
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('✅ DOM loaded successfully');
+            
+            // Test if CSS loaded by checking computed styles
+            const body = document.body;
+            const computedStyle = window.getComputedStyle(body);
+            const bgColor = computedStyle.backgroundColor;
+            
+            if (bgColor.includes('rgb') && !bgColor.includes('255, 0, 0')) {
+                console.log('✅ External CSS loaded successfully');
+                document.querySelector('.test-indicator').innerHTML = '✅ CSS and JS are working!';
+                document.querySelector('.test-indicator').style.background = 'green';
+            } else {
+                console.log('❌ External CSS failed to load');
+                document.querySelector('.test-indicator').innerHTML = '❌ CSS failed to load';
+            }
+        });
+    </script>
+</body>
+</html>
