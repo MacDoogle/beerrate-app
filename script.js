@@ -112,13 +112,19 @@ class BeerRateApp {
 
     // Rating Selection
     selectRating(button) {
+        console.log('Rating button clicked:', button.dataset.rating);
+        
+        // Remove selected class from all buttons
         document.querySelectorAll('.rating-btn').forEach(btn => {
             btn.classList.remove('selected');
         });
 
+        // Add selected class to clicked button
         button.classList.add('selected');
         this.selectedRating = button.dataset.rating;
         document.getElementById('rating').value = this.selectedRating;
+        
+        console.log('Selected rating:', this.selectedRating);
     }
 
     // Add New Beer (simplified)
@@ -133,42 +139,46 @@ class BeerRateApp {
             return;
         }
 
-        // Check for duplicates
-        const duplicate = this.beers.find(beer => 
-            beer.name.toLowerCase() === name.toLowerCase() && 
-            beer.brewery.toLowerCase() === brewery.toLowerCase()
-        );
+        const newBeer = {
+            name,
+            brewery,
+            style,
+            rating: parseInt(rating)
+        };
 
-        if (duplicate) {
-            if (confirm(`You've already rated "${name}" by ${brewery}. Update the rating?`)) {
-                duplicate.rating = parseInt(rating);
-                duplicate.style = style;
-                duplicate.dateAdded = new Date().toISOString();
+        try {
+            // Use POST to add individual beer
+            const response = await fetch(this.API_BASE, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newBeer)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Beer saved to cloud:', result);
+                
+                // Add to local array with server-generated ID
+                this.beers.push(result.beer);
+                this.displayBeers();
+                this.resetForm();
+                this.showMessage('🍺 Beer added successfully!', 'success');
             } else {
-                return;
+                throw new Error(`Server error: ${response.status}`);
             }
-        } else {
-            const newBeer = {
-                id: Date.now(),
-                name,
-                brewery,
-                style,
-                rating: parseInt(rating),
-                dateAdded: new Date().toISOString()
-            };
+        } catch (error) {
+            console.error('Failed to save to cloud:', error);
+            // Fallback to local storage
+            newBeer.id = Date.now();
+            newBeer.dateAdded = new Date().toISOString();
             this.beers.push(newBeer);
-        }
-
-        // Save to cloud
-        const saved = await this.saveToCloud();
-        
-        this.displayBeers();
-        this.resetForm();
-        
-        if (saved) {
-            this.showMessage('🍺 Beer added and saved to cloud!', 'success');
-        } else {
-            this.showMessage('🍺 Beer added (saved locally - will sync when online)', 'warning');
+            localStorage.setItem('beerRatings', JSON.stringify(this.beers));
+            
+            this.displayBeers();
+            this.resetForm();
+            this.showMessage('🍺 Beer saved locally (cloud unavailable)', 'warning');
         }
     }
 
