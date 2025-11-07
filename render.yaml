@@ -1,0 +1,16 @@
+services:
+  - type: web
+ name: beerrate-app
+runtime: dotnet
+    plan: free
+    buildCommand: dotnet publish --configuration Release --output ./build
+    startCommand: dotnet ./build/BeerRate-App.dll
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+     value: http://0.0.0.0:$PORT
+
+databases:
+  - name: beerrate-db
+    plan: free

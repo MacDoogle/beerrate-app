@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -14,12 +15,12 @@ namespace BeerRate_App.Migrations
                 name: "BeerRatings",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    BeerName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Brewery = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Style = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Rating = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    BeerName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Brewery = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Style = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Rating = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
